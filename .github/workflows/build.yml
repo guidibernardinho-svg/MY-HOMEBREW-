@@ -1,0 +1,41 @@
+name: Build Homebrew 3DS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y git cmake make gcc g++ python3-dev wget unzip
+
+    - name: Install devkitPro
+      run: |
+        wget https://devkitpro.org/devkitPro-pacman.deb
+        sudo dpkg -i devkitPro-pacman.deb
+        sudo dkp-pacman -Syu --noconfirm
+        sudo dkp-pacman -S devkitARM devkit3DS ctrulib --noconfirm
+
+    - name: Build Homebrew
+      run: |
+        export DEVKITPRO=/opt/devkitpro
+        export DEVKITARM=$DEVKITPRO/devkitARM
+        export DEVKIT3DS=$DEVKITPRO/devkit3DS
+        export PATH=$DEVKITPRO/tools/bin:$PATH
+        make
+
+    - name: Upload compiled 3DSX
+      uses: actions/upload-artifact@v3
+      with:
+        name: Homebrew-3DSX
+        path: build/homebrew-builder.3dsx
